@@ -1,83 +1,83 @@
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
-//import java.util.Scanner;
 
 
 public class Solution {
     
-    private static final MathContext PRECISAO_50_DIGITOS=new MathContext(50,RoundingMode.HALF_UP);
-    
-
     public static void main(String[] args) {
-        
-        
-        long startTime = System.nanoTime(); // Marca o tempo inicial
-        
-        
-            Solution.calcular("(((((3.5+2.5)x((4-.5)/(2+.3)))+((7-2)x(3/(1.5+0.5))))-((8/4)+((6.25-.25)x2)))x(1+1))");
-       
-
-        long endTime = System.nanoTime(); // Marca o tempo final2
-        
-        long durationInicio = endTime - startTime; // Tempo total em nanossegundos
-        double durationMs = durationInicio/ 1_000_000.0; // Convertendo para 
-        int amostra=1000000;
-        startTime = System.nanoTime();
-        
-        for (int i = 0; i < amostra; i++) {
-            Solution.calcular("(((((3.5+2.5)x((4-.5)/(2+.3)))+((7-2)x(3/(1.5+0.5))))-((8/4)+((6.25-.25)x2)))x(1+1))");
-        }
-
-        endTime = System.nanoTime(); // Marca o tempo final222
-        
-        long duration = endTime - startTime; // Tempo total em nanossegundos
-        durationMs = duration / 1_000_000.0; // Convertendo para milissegundos
-        
-        System.out.println("Tempo total: " + durationMs + " ms");
-        System.out.println("Media: " + (durationMs/amostra) + " ms");
-        
-        System.out.println(Solution.calcular("(((((3.5+2.5)x((4-.5)/(2+.3)))+((7-2)x(3/(1.5+0.5))))-((8/4)+((6.25-.25)x2)))x(1+1))"));
+        String resultado = calculate("222222222323");
+        System.out.println("Resultado: " + resultado);
     }
-    public static void CreateLinkedList(String expressao, LinkedListWrapper listWrapper) {
-        char[] Cexp = expressao.toCharArray();
+    
+    public static void CreateLinkedList(String expression, LinkedListWrapper listWrapper) {
+        char[] Cexp = expression.toCharArray();
 
         // Criar o primeiro nó (head)
         listWrapper.head = new NodeC(Cexp[0]);
-        NodeC aux = listWrapper.head;
+        NodeC current = listWrapper.head;
     
         // Criar os próximos nós
         for (int i = 1; i < Cexp.length; i++) {
-            aux.next = new NodeC(Cexp[i]); // Criar próximo nó
-            aux.next.ant = aux;            // Conectar o nó anterior
-            aux = aux.next;                // Mover ponteiro para o novo nó
+            current.next = new NodeC(Cexp[i]); // Criar próximo nó
+            current.next.ant = current;            // Conectar o nó anterior
+            current = current.next;                // Mover ponteiro para o novo nó
         }
-        aux.next=null;
+        current.next=null;
         // O último nó é o tail
-        listWrapper.tail = aux;
+        listWrapper.tail = current;
     }
     
-    public static String calcular (String expressao){
+    public static String calculate (String expression){
         
-        if (expressao.contentEquals(""))
+        if (expression.contentEquals(""))
             return "0";
         LinkedListWrapper listWrapper = new LinkedListWrapper();
-        CreateLinkedList(expressao, listWrapper);
-        NodeC head=listWrapper.head;
-        NodeC tail=listWrapper.tail;
-        int erroSintax=testSintaxError(head, tail);
-        if(erroSintax==1)
-        return "Sintax Error";
-        int mathError=evaluateParentheses(listWrapper);
-        if(mathError==1)
-        return "Math Error";
-        trimTrailingZeros(listWrapper);
+        CreateLinkedList(expression, listWrapper);
+        NodeC head=listWrapper.head;                 
+        NodeC tail=listWrapper.tail;                 
+        if(!isSyntaxValid(head, tail))
+        throw new SyntaxErrorException("Invalid expression");
+        processCalculation(listWrapper);
+        return formatResultToString(listWrapper);
+         
+    }
+    private static void processCalculation(LinkedListWrapper listWrapper){
+        int divisionByZeroMathError=evaluateParentheses(listWrapper);
+        if(divisionByZeroMathError==1)
+        throw new ArithmeticException("Division by zero");
+        if(hasLargeNumberMathError(listWrapper.head, listWrapper.tail))
+        throw new ArithmeticException("Number exceeds limit");
+        
+    
+    }
+    
+    private static String formatResultToString(LinkedListWrapper listWrapper){
+        int hasPoint=insertDecimalPoint(listWrapper);
+        if(hasPoint==0){                  
+            trimTrailingZeros(listWrapper);
+        }
         String result=stringNumFromList(listWrapper.head,listWrapper.tail);
         if(result.length()<=15)
         return result;
         else
-        return result.substring(0,15);     
+        return result.substring(0,15);   
+
+
+    }
+    private static boolean hasLargeNumberMathError(NodeC head,NodeC tail){ //A number must not have more than 14 digits before dot
+        NodeC current=head;
+        int count=0;
+        while(current!=null&&current.c!='.'){
+            count++;
+            current=current.next;
+        }
+        if(count>14)
+        return true;
+        else
+        return false;
+
+
     }
     private static void trimTrailingZeros(LinkedListWrapper listWrapper){
         NodeC current=listWrapper.tail;
@@ -89,7 +89,36 @@ public class Solution {
         listWrapper.tail=current;
        
     }
-    private static int evaluateParentheses(LinkedListWrapper listWrapper){
+    private static int insertDecimalPoint(LinkedListWrapper listWrapper){  // Insert a decimal dot if it does not have one. E.g., 456 becomes 456.
+        NodeC current=listWrapper.head;
+        while(current!=null&&current.c!='.'){
+            current=current.next;
+        }
+        if(current==null){
+
+            listWrapper.tail.next=new NodeC('.');
+            listWrapper.tail.next.ant=listWrapper.tail;
+            listWrapper.tail=listWrapper.tail.next;
+            return 1; // retorna um se nao estava com ponto decimal. ex.: 2x3=6 fica "6."
+
+        }
+        return 0;
+        
+        
+       
+    }
+  
+    // Start of the recursive calculation of the expression, beginning with parentheses
+    // e.g.:
+    // 1) evaluateParentheses receives "(4+5)+(2x3)"
+    // 2) Recursively calls evaluateParentheses for "4+5"
+    // 3) Returns to the first call of evaluateParentheses, which now has "9+(2x3)" in its linked list
+    // 4) Recursively calls evaluateParentheses for "2x3"
+    // 5) Returns to the first call of evaluateParentheses, which now has "9+6" in its linked list
+    // 6) Calls evaluateAdditionAndSubtraction to calculate 9+6=15
+    // Other evaluate methods follow the same recursive logic, respecting the order of precedence: parentheses, multiplication/division, addition/subtraction
+    // Only evaluateMultiplicationAndDivision does not use recursion, as it directly calculates a multiplication or division expression
+    private static int evaluateParentheses(LinkedListWrapper listWrapper){ 
         NodeC head=listWrapper.head;
         NodeC tail=listWrapper.tail;
         NodeC current=head;
@@ -99,9 +128,11 @@ public class Solution {
             current=current.next;
             if(current==tail.next)
             break;
+            //LinkedListWrapper listInternParenthesis=new LinkedListWrapper();
+            //LinkedListWrapper listExternParenthesis=new Linked
             NodeC beforeParen=current.ant;
             NodeC headAux=current.next; //inicio da sublista dentro do parenteses
-            int countParen=1;
+            int countParen=1; //contagem de parenteses para obter os parenteses mais externos
             
             while(current!=tail&&countParen!=0){
                 current=current.next;
@@ -121,6 +152,7 @@ public class Solution {
             mathError=evaluateParentheses(listWrapperAux);
             if(mathError==1)
             return 1;
+            //encaixe da lista auxiliar na principal:
             if(beforeParen==null){   //significa que o parenteses esta no head
                 head=listWrapperAux.head;
                 head.ant=null;
@@ -146,12 +178,6 @@ public class Solution {
             }
             
             current=listWrapperAux.tail.next;
-            
-            
-            
-
-
-
         }
         listWrapper.head=head;
         
@@ -161,11 +187,6 @@ public class Solution {
         if(mathError==1)
         return 1;
         return 0;
-
-
-
-
-
 
     }
     private static int evaluateAdditionAndSubtraction(LinkedListWrapper listWrapper){
@@ -192,17 +213,17 @@ public class Solution {
             NodeC lstNodeMult=current.next;
             while(lstNodeMult.c=='+'||lstNodeMult.c=='-')
             lstNodeMult=lstNodeMult.next;
-            ////System.out.println(lstNodeMult.c);
+            
             while(lstNodeMult.next!=tail.next&&((lstNodeMult .c>='0'&&lstNodeMult .c<='9')||lstNodeMult .c=='.'))
             lstNodeMult=lstNodeMult.next;
             
             if(lstNodeMult!=tail)
-            lstNodeMult=lstNodeMult.ant;//lstNodeMult termina a sublista de mult ou div, ex.: em "2+3x++-5-7", ;lstNodeMult estará em 5
+            lstNodeMult=lstNodeMult.ant;//lstNodeMult termina a sublista de mult ou div, ex.: em "2+3x++-5-7", lstNodeMult estará em 5
             
             LinkedListWrapper listWrapperAux = new LinkedListWrapper();
             listWrapperAux.head=fstNodeMult;
             listWrapperAux.tail=lstNodeMult;
-            mathError=evaluateMultiplicationAndDivision(listWrapperAux);//calcula a multiplicao ou divisao, recirando a sublista
+            mathError=evaluateMultiplicationAndDivision(listWrapperAux);//calcula a multiplicao ou divisao, recriando a sublista
 
             if(mathError==1)
             return 1;
@@ -236,91 +257,88 @@ public class Solution {
         return 1;
         return 0;
     }
+    //calcula expressao já sem multiplicação/divisao, expressoes que chegam aqui devem ser como "2+3-45", por exemplo
     private static int evaluateAdditionWithoutMultiplication(LinkedListWrapper listWrapper){
-      
         NodeC head=listWrapper.head;
         NodeC tail=listWrapper.tail;
         NodeC current=head;
         boolean neg=false;
         int mathError=0;
+
         while(current!=tail.next){
+            while(current.c=='+'||current.c=='-'){ //obtem sinal do número
+                if(current.c=='-')
+                neg=!neg;
+                current=current.next;
+            }
+
+            NodeC beginFstTerm=current;
+            NodeC endFstTerm=null;
+            while(current!=tail.next&&current.c>='0'&&current.c<='9'){
+                
+                current=current.next;
+            }
+            if(current!=tail.next&&current.c=='.')
+            current=current.next;
+            while(current!=tail.next&&current!=null&&current.c>='0'&&current.c<='9')
+            current=current.next;
+            if(current==tail.next)
+            endFstTerm=tail;
+            else
+            endFstTerm=current.ant;
+
+            if(current==tail.next){//otimizar os calculos caso nao haja segundo termo
+                if(!neg)
+                break;
+                else{
+                   // System.out.println("so o num "+stringNumFromList(beginFstTerm, endFstTerm));
+                    LinkedListWrapper listWrapperAux=new LinkedListWrapper();
+                    CreateLinkedList("-"+stringNumFromList(beginFstTerm, endFstTerm), listWrapperAux);
+                    head=listWrapperAux.head;
+                    tail=listWrapperAux.tail;
+                    break;
+                }
+            }
+
+            BigDecimal num1;
+            if(neg)
+            num1 = new BigDecimal("-"+stringNumFromList(beginFstTerm, endFstTerm));
+            else
+            num1 = new BigDecimal(stringNumFromList(beginFstTerm, endFstTerm));
+
+            neg=false;
             while(current.c=='+'||current.c=='-'){
                 if(current.c=='-')
                 neg=!neg;
                 current=current.next;
 
             }
-            double firstTerm=0;
-            while(current!=tail.next&&current.c>='0'&&current.c<='9'){
-                firstTerm=10*firstTerm+(current.c-'0');
-                current=current.next;
-            }
-            
-            if(current!=tail.next&&current.c=='.'){
-                current=current.next;
-                double firstTermAux=0;
-                int i=0;
-                while(current!=tail.next&&current.c>='0'&&current.c<='9'){
-                    i++;
-                    firstTermAux+=(double)(current.c-'0')/Math.pow(10, i);
-                    current=current.next;
-                }
-                firstTerm+=firstTermAux;
-            }
-            
-            
+
+            NodeC beginScdTerm=current;
+            NodeC endScdTerm=null;
+            while(current!=tail.next&&current.c>='0'&&current.c<='9')
+            current=current.next;
+            if(current!=tail.next&&current.c=='.')
+            current=current.next;
+            while(current!=tail.next&&current.c>='0'&&current.c<='9')
+            current=current.next;
+            if(current!=tail.next)
+            endScdTerm=current.ant;
+            else
+            endScdTerm=tail;
+
+            BigDecimal num2; 
             if(neg)
-            firstTerm=-firstTerm;
-            
-            
-            
-            if(current==tail.next&&!neg){
+            num2 = new BigDecimal("-"+stringNumFromList(beginScdTerm, endScdTerm));
+            else
+            num2 = new BigDecimal(stringNumFromList(beginScdTerm, endScdTerm));
 
-                
-                break;
-            }
-            ////System.out.println("nao break");
-               
-
-            
-            double secondTerm=0;    
-            if(current==tail.next){
-                secondTerm=0;
-            }
-            else{
-                neg=false;
-                while(current.c=='+'||current.c=='-'){
-                    if(current.c=='-')
-                    neg=!neg;
-                    current=current.next;
-
-                }
-            
-                while(current!=tail.next&&current.c>='0'&&current.c<='9'){
-                    secondTerm=10*secondTerm+(current.c-'0');
-                    current=current.next;
-                }
-                if(current!=tail.next&&current.c=='.'){
-                    current=current.next;
-                    double secondTermAux=0;
-                    int i=0;
-                    while(current!=tail.next&&current.c>='0'&&current.c<='9'){
-                        i++;
-                        secondTermAux+=(double)(current.c-'0')/Math.pow(10, i);
-                        current=current.next;
-                    }
-                    secondTerm+=secondTermAux;
-                }
-                if(neg)
-                secondTerm=-secondTerm;
-            }
-            
             neg=false;
             
-            double result=firstTerm+secondTerm;
-            //ver math error aqui;
+            BigDecimal result = num1.add(num2);
             LinkedListWrapper listWrapperAux=new LinkedListWrapper();
-            CreateLinkedList(String.valueOf(result), listWrapperAux);
+            CreateLinkedList(result.toPlainString(), listWrapperAux);
+
             head=listWrapperAux.head;
             if(current==tail.next){
                 tail=listWrapperAux.tail;
@@ -328,38 +346,30 @@ public class Solution {
             }
             listWrapperAux.tail.next=current;
             current.ant=listWrapperAux.tail;
-            current=head;
-
-            
-
+            current=head;          
         }
         listWrapper.head=head;
         listWrapper.tail=tail;
         if(mathError==1)
         return 1;
-        return 0;
-
-        
+        return 0; 
     }
     private static int evaluateMultiplicationAndDivision(LinkedListWrapper listWrapper){
+        
         NodeC head=listWrapper.head;
+        NodeC tail=listWrapper.tail;
         NodeC current=head;
-        double firstTerm=0;
-        while(current.c>='0'&&current.c<='9'){
-            firstTerm=10*firstTerm+(current.c-'0');
-            current=current.next;
-        }
-        if(current.c=='.'){
-            current=current.next;
-            double firstTermAux=0;
-            int i=0;
-            while(current!=null&&current.c>='0'&&current.c<='9'){
-                i++;
-                firstTermAux+=(double)(current.c-'0')/Math.pow(10, i);
-                current=current.next;
-            }
-            firstTerm+=firstTermAux;
-        }
+        NodeC beginFstTerm=head;
+        NodeC endFstTerm=null;
+
+        while(current.c>='0'&&current.c<='9')
+        current=current.next;
+        if(current.c=='.')
+        current=current.next;
+        while(current!=null&&current.c>='0'&&current.c<='9')
+        current=current.next;
+
+        endFstTerm=current.ant;
         boolean isMult=true;
         if(current.c=='/')
         isMult=false;
@@ -370,87 +380,98 @@ public class Solution {
             if(current.c=='-')
             neg=!neg;
             current=current.next;
+        }
+        NodeC beginScdTerm=current;
+        NodeC endScdTerm=null;
+        while(current!=null&&current.c>='0'&&current.c<='9')
+        current=current.next;
+        
+        if(current!=null&&current.c=='.')
+        current=current.next;
+        while(current!=null&&current.c>='0'&&current.c<='9')
+        current=current.next;
+        if(current!=null)
+        endScdTerm=current.ant;
+        else
+        endScdTerm=tail;
+
+        BigDecimal num1 = new BigDecimal(stringNumFromList(beginFstTerm, endFstTerm));
+        BigDecimal num2=null;
+       
+        if(neg){
+            num2 = new BigDecimal("-"+stringNumFromList(beginScdTerm, endScdTerm));
 
         }
-        double secondTerm=0;
-        while(current!=null&&current.c>='0'&&current.c<='9'){
-            secondTerm=10*secondTerm+(current.c-'0');
-            current=current.next;
-        }
-        if(current!=null&&current.c=='.'){
-            current=current.next;
-            double secondTermAux=0;
-            int i=0;
-            while(current!=null&&current.c>='0'&&current.c<='9'){
-                i++;
-                secondTermAux+=(double)(current.c-'0')/Math.pow(10, i);
-                current=current.next;
-            }
-            secondTerm+=secondTermAux;
-        }
-        if(neg)
-        secondTerm=-secondTerm;
-        double result;
-        if(isMult)
-        result=firstTerm*secondTerm;
         else{
-            if(secondTerm==0)
-            return 1;
-            result=firstTerm/secondTerm;
+            
+            num2 = new BigDecimal(stringNumFromList(beginScdTerm, endScdTerm));
 
         }
         
-        //testar math error aqui
+        BigDecimal result=null;
+        if(isMult){
+            result = num1.multiply(num2);
+
+        }
+       
+        else{
+            
+            if(num2.compareTo(BigDecimal.ZERO) == 0)
+            return 1;
+            result = num1.divide(num2, 50, RoundingMode.HALF_UP);
+
+        }
         LinkedListWrapper listWrapperAux=new LinkedListWrapper();
-        CreateLinkedList(String.valueOf(result), listWrapperAux);
+        CreateLinkedList(result.toPlainString(), listWrapperAux);
         listWrapper.head=listWrapperAux.head;
         listWrapper.tail=listWrapperAux.tail;
         return 0;
         
     }
     
-
-    public static int testSintaxError(NodeC head, NodeC tail){
+    
+    public static boolean isSyntaxValid (NodeC head, NodeC tail){
         NodeC auxAnt=null;
         NodeC aux=head;
         boolean temPonto=false;
         boolean temDig=false;
         int nParen=0;
         if(aux.c==')'||aux.c=='x'||aux.c=='/')
-            return 1;
+            return false;
         auxAnt=aux;
         aux=aux.next;
         while(auxAnt!=null){
+            
             if(auxAnt.c=='('){
                 nParen++;
                 if(aux==null)
-                    return 1;
+                    return false;
                 if(aux.c==')'||aux.c=='x'||aux.c=='/')
-                    return 1;
+                    return false;
             }
             else if(auxAnt.c==')'){
                 nParen--;
                 if(nParen<0)
-                    return 1;
+                    return false;
                 if(aux!=null&&((aux.c>='0'&&aux.c<='9')||aux.c=='.'||aux.c=='('))
-                    return 1;
+                    return false;
                 
 
 
             }
             else if(auxAnt.c=='+'||auxAnt.c=='-'){
                 if(aux==null)
-                    return 1;
+                    return false;
                 if(aux.c==')'||aux.c=='x'||aux.c=='/')
-                    return 1;
+                    return false;
             
 
             }
             else if(auxAnt.c=='x'||auxAnt.c=='/'){
                 if(aux==null)
-                    return 1;
+                    return false;
                 if(aux.c==')'||aux.c=='x'||aux.c=='/')
-                    return 1;
+                    return false;
             
 
             }
@@ -459,12 +480,12 @@ public class Solution {
                     temDig=true;
                 if(aux!=null&&aux.c=='.'){
                     if(temPonto)
-                        return 1;
+                        return false;
                     else
                         temPonto=true;
                 }
                 if(aux!=null&&aux.c=='(')
-                    return 1;
+                    return false;
                 if(aux!=null&&(aux.c<'0'||aux.c>'9')&&aux.c!='.'){
                     temPonto=false;
                     temDig=false;
@@ -474,12 +495,12 @@ public class Solution {
             else if(auxAnt.c=='.'){
                if(aux==null){
                     if(!temDig)
-                        return 1;
+                        return false;
 
                }
                else{
                     if(aux.c=='('||(aux.c==')'&&!temDig)||aux.c=='.')
-                        return 1;
+                        return false;
                     
 
                }
@@ -489,23 +510,17 @@ public class Solution {
 
                 }
             }
-
-
+            else{
+                return false;
+            }
             auxAnt=aux;
             if(aux==null)
                 break;
             aux=aux.next;
-
-
-
         }
         if(nParen!=0)
-            return 1;
-        return 0;
-
-        
-
-
+            return false;
+        return true;
     }
     
     private static String stringNumFromList(NodeC head,NodeC tail){
@@ -516,19 +531,6 @@ public class Solution {
         }
         return result;
     }
-    private static BigDecimal dividirComPrecisao(BigDecimal dividendo, BigDecimal divisor) {
-        // Configura a precisão máxima para 50 dígitos
-        MathContext mc = new MathContext(50, RoundingMode.HALF_UP);
-
-        // Realiza a divisão
-        BigDecimal resultado = dividendo.divide(divisor, mc);
-
-        // Reduz a escala (casas decimais) ao mínimo necessário
-        resultado = resultado.setScale(resultado.scale() <= 0 ? 0 : resultado.stripTrailingZeros().scale(), RoundingMode.HALF_UP);
-
-        return resultado;
-    }
-
 
 
 }
@@ -546,4 +548,9 @@ class NodeC {
 }
 class LinkedListWrapper {
     NodeC head, tail;
+}
+class SyntaxErrorException extends RuntimeException {
+    public SyntaxErrorException(String message) {
+        super(message);
+    }
 }
