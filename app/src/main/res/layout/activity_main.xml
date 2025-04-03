@@ -305,7 +305,7 @@
 
     <TextView
         android:id="@+id/result"
-        android:layout_width="332dp"
+        android:layout_width="400dp"
         android:layout_height="69dp"
         android:text="0"
         android:textAlignment="textEnd"
