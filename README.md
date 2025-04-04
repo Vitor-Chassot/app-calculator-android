@@ -16,5 +16,5 @@ Aqui estão algumas imagens relacionadas ao projeto:
 ![Cálculo 1](imagens/Calculo1.jpg)
 ![Cálculo 2](imagens/calculo2.jpg)
 ![Cálculo Decimal](imagens/CalculoDecimal.jpg)
-![Notação Científica](imagens/NotaçãoCientifica.jpg)
+![Notação Científica](imagens/NotacaoCientifica.jpg)
 ![Aninhamento de Parênteses](imagens/AninhamentoDeParenteses.jpg)
